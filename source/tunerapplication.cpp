@@ -15,6 +15,9 @@ void TunerApplication::run()
     while(window.isOpen())
     {
         handleEvents();
+
+        ui->periodLength = tuningMediator->getFundamentalFrequency();
+
         display();
     }
 }

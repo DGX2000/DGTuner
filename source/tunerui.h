@@ -10,8 +10,13 @@ public:
 
     void drawOnto(sf::RenderWindow& window);
 
-private:
+    // TODO: Once TuningMediator is finished, this class should receive a frequency instead
+    std::uint64_t periodLength{0};
 
+private:
+    // TODO: Remove these once the UI is finished
+    sf::Font font;
+    sf::Text text;
 };
 
 #endif // TUNERUI_H

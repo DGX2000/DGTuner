@@ -2,13 +2,14 @@
 #define INPUTUTIL_H
 
 #include <chrono>
-#include <cmath>
 #include <string>
 #include <thread>
 #include <tuple>
 #include <vector>
 
 #include <SFML/Audio.hpp>
+
+#include "audioutil.h"
 
 class InputUtil
 {
@@ -29,15 +30,8 @@ public:
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         recorder.stop();
 
-        // TODO: Move to VolumeUtil
         const auto& buffer = recorder.getBuffer();
-        auto volume = double{0.0};
-        for(sf::Uint64 i = 0; i < buffer.getSampleCount(); ++i)
-        {
-            volume += buffer.getSamples()[i] * buffer.getSamples()[i];
-        }
-
-        return std::sqrt(volume / static_cast<double>(buffer.getSampleCount()));
+        return AudioUtil::computeRmsVolume(AudioUtil::Signal{buffer.getSamples(), buffer.getSampleCount()});
     }
 
     static std::vector<std::pair<std::string, double>> getAllInputsWithVolumes()

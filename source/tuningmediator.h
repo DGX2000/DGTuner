@@ -1,24 +1,21 @@
 #ifndef TUNINGMEDIATOR_H
 #define TUNINGMEDIATOR_H
 
+#include <memory>
+
+#include "sampler.h"
 
 class TuningMediator
 {
 public:
-    struct FrequencyRange
-    {
-        double min;
-        double max;
-    };
-
-public:
     TuningMediator();
+    ~TuningMediator();
 
     double getFundamentalFrequency() const;
-    void setInput();
+    void setInput(const std::string& name);
 
 private:
-    // Sampler
+    std::unique_ptr<Sampler> sampler;
 };
 
 #endif // TUNINGMEDIATOR_H

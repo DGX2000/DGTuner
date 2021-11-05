@@ -1,10 +1,11 @@
-#ifndef FREQUENCYUTIL_H
-#define FREQUENCYUTIL_H
+#ifndef AUDIOUTIL_H
+#define AUDIOUTIL_H
 
 #include <cstdint>
-#include <tuple>
+#include <cmath>
+#include <vector>
 
-class FrequencyUtil
+class AudioUtil
 {
 public:
     struct Signal
@@ -13,9 +14,7 @@ public:
         const std::uint64_t length;
     };
 
-    using Shift = std::uint64_t;
     using PeriodLength = std::uint64_t;
-
     struct PeriodLengthRange
     {
         PeriodLength min;
@@ -23,9 +22,9 @@ public:
     };
 
 public:
-    FrequencyUtil() = delete;
+    AudioUtil() = delete;
 
-    static std::tuple<PeriodLength, double> detectFundamentalPeriodLength(
+    static std::pair<PeriodLength, double> detectFundamentalPeriodLength(
             const Signal& signal,
             const PeriodLengthRange& range)
     {
@@ -46,8 +45,19 @@ public:
         return {maxPeriodLength, maxAutocorrelation};
     }
 
-private:
-    static double autocorrelation(const Signal& signal, const Shift shift)
+    static double computeRmsVolume(const Signal& signal)
+    {
+        auto volume = double{0.0};
+
+        for(std::uint64_t i = 0; i < signal.length; ++i)
+        {
+            volume += signal.samples[i] * signal.samples[i];
+        }
+
+        return std::sqrt(volume / static_cast<double>(signal.length));
+    }
+
+    static double autocorrelation(const Signal& signal, const std::uint64_t shift)
     {
         double result = 0.0;
 
@@ -58,6 +68,12 @@ private:
 
         return result / static_cast<double>(signal.length - shift);
     }
+
+    static double periodToFrequency(const std::uint64_t periodLength, const std::uint64_t samplingRate)
+    {
+        return static_cast<double>(samplingRate) / static_cast<double>(periodLength);
+    }
+
 };
 
-#endif // FREQUENCYUTIL_H
+#endif // AUDIOUTIL_H
