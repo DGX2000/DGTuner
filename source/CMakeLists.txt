@@ -5,4 +5,5 @@ file(GLOB source_files CONFIGURE_DEPENDS "*.cpp")
 add_executable(DGTuner ${source_files})
 target_link_libraries(DGTuner PRIVATE ${sfml_libs})
 
-add_subdirectory(unittest)
+# TODO: Uncomment once some test are in
+#add_subdirectory(unittest)

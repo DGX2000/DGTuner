@@ -1,1 +1,2 @@
-# TODO: Add any data that might need to be installed, once an install target is made
+file(COPY "IBMPlexMono-Bold.ttf" DESTINATION ${CMAKE_BINARY_DIR}/bin/fonts)
+file(COPY "IBMPlexMono-Medium.ttf" DESTINATION ${CMAKE_BINARY_DIR}/bin/fonts)
