@@ -12,7 +12,7 @@
 class TunerApplication
 {
 public:
-    static constexpr unsigned int WINDOW_WIDTH = 300;
+    static constexpr unsigned int WINDOW_WIDTH = 400;
     static constexpr unsigned int WINDOW_HEIGHT = 600;
     const std::string WINDOW_TITLE{"DG Tuner"};
 
