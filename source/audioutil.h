@@ -24,12 +24,10 @@ public:
 public:
     AudioUtil() = delete;
 
-    static std::pair<PeriodLength, double> detectFundamentalPeriodLength(
-            const Signal& signal,
-            const PeriodLengthRange& range)
+    static PeriodLength detectFundamentalPeriodLength(const Signal& signal, const PeriodLengthRange& range)
     {
         double maxAutocorrelation{0.0};
-        PeriodLength maxPeriodLength{0};
+        PeriodLength maxPeriodLength{range.min};
 
         for(auto shift = range.min; shift < range.max; ++shift)
         {
@@ -42,7 +40,7 @@ public:
             }
         }
 
-        return {maxPeriodLength, maxAutocorrelation};
+        return maxPeriodLength;
     }
 
     static double computeRmsVolume(const Signal& signal)

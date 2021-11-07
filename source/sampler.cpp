@@ -2,69 +2,44 @@
 
 #include "audioutil.h"
 
-// TODO: Remove iostream (only for debugging)
-#include <iostream>
-
-Sampler::Sampler(sf::Time time)
-    : currentlyDetectedPeriod(250)
+Sampler::Sampler(sf::Time time) : currentlyDetectedPeriod(PERIOD_LENGTH_AT_START)
 {
     setProcessingInterval(time);
 }
 
 bool Sampler::onProcessSamples(const sf::Int16 *samples, std::size_t sampleCount)
 {
-    // TODO: Clean this mess up, also clean up medianfilter.h in the process
-    // TODO: periodCorrelationPair does not need to be a pair anymore
-    // TODO: Figure out why it sometime returns periodLength = 0
-    // Get volume and change in volume as a ratio
-    auto volume = AudioUtil::computeRmsVolume(AudioUtil::Signal{samples, sampleCount});
-    auto volumeChange = volume / previousVolume;
-    previousVolume = volume;
+    trackVolume(samples, sampleCount);
 
-    // TODO: Make 2.0 a named constant
-    if(samplesToFilter == 0 && samplesToSkip == 0)
+    if(areThereSamplesToFilter())
     {
-        if(volumeChange > 2.0)
+        filterSample(samples, sampleCount);
+    }
+    else if(areThereSamplesToSkip())
+    {
+        skipSample();
+        if(!areThereSamplesToSkip())
         {
-            dynamicThreshold = volume;
-            samplesToSkip = 10;
-        }
-        else if(volume > 0.25 * dynamicThreshold)
-        {
-            auto median = medianFilter.getMedian();
-            scanningRangeMin = median - 10;
-            scanningRangeMax = median + 10;
-
-            // TODO: Make 0.25 a named constant
-            auto periodCorrelationPair =
-                AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
-                                                         AudioUtil::PeriodLengthRange{scanningRangeMin, scanningRangeMax});
-
-            currentlyDetectedPeriod.store(periodCorrelationPair.first);
-        }
-        else
-        {
-            // Reset dynamic threshold
-            dynamicThreshold = 70000.0;
+            startFilteringSamples(SAMPLES_TO_FILTER);
         }
     }
     else
     {
-        if(samplesToSkip == 0)
+        if(soundDetected())
         {
-            --samplesToFilter;
-            auto periodCorrelationPair =
+            updateVolumeThreshold();
+            startSkippingSamples(SAMPLES_TO_SKIP);
+        }
+        else if(!soundFadedOut())
+        {
+            auto fundamentalPeriodLength =
                 AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
-                                                         AudioUtil::PeriodLengthRange{100, 550});
-            medianFilter.update(periodCorrelationPair.first);
+                                                         AudioUtil::PeriodLengthRange{scanningRangeMin, scanningRangeMax});
+            currentlyDetectedPeriod.store(fundamentalPeriodLength);
         }
         else
         {
-            --samplesToSkip;
-            if(samplesToSkip == 0)
-            {
-                samplesToFilter = 5;
-            }
+            resetVolumeThreshold();
         }
     }
 
@@ -74,4 +49,73 @@ bool Sampler::onProcessSamples(const sf::Int16 *samples, std::size_t sampleCount
 uint64_t Sampler::getCurrentlyDetectedPeriod() const
 {
     return currentlyDetectedPeriod.load();
+}
+
+bool Sampler::areThereSamplesToSkip() const
+{
+    return samplesToSkip != 0;
+}
+
+bool Sampler::areThereSamplesToFilter() const
+{
+    return samplesToFilter != 0;
+}
+
+void Sampler::startSkippingSamples(std::uint64_t samplesToSkip)
+{
+    this->samplesToSkip = samplesToSkip;
+}
+
+void Sampler::startFilteringSamples(std::uint64_t samplesToFilter)
+{
+    this->samplesToFilter = samplesToFilter;
+}
+
+void Sampler::skipSample()
+{
+    --samplesToSkip;
+}
+
+void Sampler::filterSample(const sf::Int16 *samples, std::size_t sampleCount)
+{
+    --samplesToFilter;
+
+    auto fundamentalPeriodLength =
+        AudioUtil::detectFundamentalPeriodLength(
+                AudioUtil::Signal{samples, sampleCount},
+                AudioUtil::PeriodLengthRange{BROAD_SCANNING_RANGE_MIN, BROAD_SCANNING_RANGE_MAX});
+    medianFilter.update(fundamentalPeriodLength);
+
+    if(!areThereSamplesToFilter())
+    {
+        auto median = medianFilter.getMedian();
+        scanningRangeMin = median - FOCUSED_SCANNING_RANGE_HALFWIDTH;
+        scanningRangeMax = median + FOCUSED_SCANNING_RANGE_HALFWIDTH;
+    }
+}
+
+void Sampler::trackVolume(const sf::Int16 *samples, std::size_t sampleCount)
+{
+    previousVolume = volume;
+    volume = AudioUtil::computeRmsVolume(AudioUtil::Signal{samples, sampleCount});
+}
+
+bool Sampler::soundDetected() const
+{
+    return (volume / previousVolume) > VOLUME_DETECTION_THRESHOLD;
+}
+
+bool Sampler::soundFadedOut() const
+{
+    return volume <= VOLUME_FADEOUT_THRESHOLD * volumeThreshold;
+}
+
+void Sampler::updateVolumeThreshold()
+{
+    volumeThreshold = volume;
+}
+
+void Sampler::resetVolumeThreshold()
+{
+    volumeThreshold = std::numeric_limits<double>::infinity();
 }
