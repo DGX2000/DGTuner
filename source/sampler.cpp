@@ -2,6 +2,9 @@
 
 #include "audioutil.h"
 
+// TODO: Remove iostream (only for debugging)
+#include <iostream>
+
 Sampler::Sampler(sf::Time time)
     : currentlyDetectedPeriod(250)
 {
@@ -10,26 +13,59 @@ Sampler::Sampler(sf::Time time)
 
 bool Sampler::onProcessSamples(const sf::Int16 *samples, std::size_t sampleCount)
 {
-    // TODO: First idea for algorithm
-    // (1) High volume threshold as first filter, if volume threshhold is passed, scan the whole
-    //     range and detect the fundamental period (threshold has to be dynamic)
-    // (2) Medium volume threshold => as long as volume is above this look in the range
-    //     found in (1)
-    // (3) Low volume threshold => no scanning in this region, but volume threshold is lowered every
-    //     interval we're in this region
-    auto periodCorrelationPair =
-            AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
-                                                     AudioUtil::PeriodLengthRange{100, 550});
+    // TODO: Clean this mess up, also clean up medianfilter.h in the process
+    // TODO: periodCorrelationPair does not need to be a pair anymore
+    // TODO: Figure out why it sometime returns periodLength = 0
+    // Get volume and change in volume as a ratio
+    auto volume = AudioUtil::computeRmsVolume(AudioUtil::Signal{samples, sampleCount});
+    auto volumeChange = volume / previousVolume;
+    previousVolume = volume;
 
-    if(periodCorrelationPair.second > 5000.0)
+    // TODO: Make 2.0 a named constant
+    if(samplesToFilter == 0 && samplesToSkip == 0)
     {
-        auto min = periodCorrelationPair.first - 10;
-        auto max = periodCorrelationPair.first + 10;
-        periodCorrelationPair =
-                AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
-                                                       AudioUtil::PeriodLengthRange{min, max});
+        if(volumeChange > 2.0)
+        {
+            dynamicThreshold = volume;
+            samplesToSkip = 10;
+        }
+        else if(volume > 0.25 * dynamicThreshold)
+        {
+            auto median = medianFilter.getMedian();
+            scanningRangeMin = median - 10;
+            scanningRangeMax = median + 10;
 
-        currentlyDetectedPeriod.store(periodCorrelationPair.first);
+            // TODO: Make 0.25 a named constant
+            auto periodCorrelationPair =
+                AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
+                                                         AudioUtil::PeriodLengthRange{scanningRangeMin, scanningRangeMax});
+
+            currentlyDetectedPeriod.store(periodCorrelationPair.first);
+        }
+        else
+        {
+            // Reset dynamic threshold
+            dynamicThreshold = 70000.0;
+        }
+    }
+    else
+    {
+        if(samplesToSkip == 0)
+        {
+            --samplesToFilter;
+            auto periodCorrelationPair =
+                AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
+                                                         AudioUtil::PeriodLengthRange{100, 550});
+            medianFilter.update(periodCorrelationPair.first);
+        }
+        else
+        {
+            --samplesToSkip;
+            if(samplesToSkip == 0)
+            {
+                samplesToFilter = 5;
+            }
+        }
     }
 
     return true;
