@@ -12,6 +12,8 @@ public:
     ~TuningMediator();
 
     double getFundamentalFrequency() const;
+    double getVolume() const;
+
     void setInput(const std::string& name);
 
 private:

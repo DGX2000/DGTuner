@@ -10,8 +10,12 @@ public:
 
     void drawOnto(sf::RenderWindow& window);
 
-    // TODO: Once TuningMediator is finished, this class should receive a frequency instead
-    double periodLength{0.0};
+    void displayFrequency(double frequency);
+    void displayVolume(double volume);
+
+private:
+    void arrangeLayout();
+    void setupColors();
 
 private:
     // TODO: Remove these once the UI is finished
@@ -19,6 +23,18 @@ private:
     sf::Text text;
 
     sf::RectangleShape background;
+
+    // TODO: These are just for mocking up a design
+    //       move these to classes later
+    sf::RectangleShape slidingBand;
+    sf::RectangleShape slidingBandWindow;
+    sf::RectangleShape optionsMenu;
+    sf::RectangleShape optionsMenuBookmark;
+    sf::RectangleShape volumeIndicator;
+
+    double frequency{0.0};
+    double volume{0.0};
+    float width, height;
 };
 
 #endif // TUNERUI_H

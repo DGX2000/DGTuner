@@ -8,7 +8,6 @@ TuningMediator::TuningMediator()
     auto loudestInput = InputUtil::getLoudestInput();
 
     // TODO: Make the frequency range adjustable
-    // - Add instruments? (guitar/bass/chromatic)
     // - Convert minimum frequency of range into minimum sampling time needed
     //   to detect that frequency
     sampler = std::make_unique<Sampler>(sf::milliseconds(32));
@@ -23,9 +22,13 @@ TuningMediator::~TuningMediator()
 
 double TuningMediator::getFundamentalFrequency() const
 {
-    // TODO: Conversion to frequency
     auto fundamentalPeriod = sampler->getCurrentlyDetectedPeriod();
-    return fundamentalPeriod;
+    return AudioUtil::periodToFrequency(fundamentalPeriod, sampler->getSampleRate());
+}
+
+double TuningMediator::getVolume() const
+{
+    return AudioUtil::rmsVolumeToDecibels(sampler->getCurrentVolume());
 }
 
 void TuningMediator::setInput(const std::string& name)

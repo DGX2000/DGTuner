@@ -6,8 +6,6 @@ TunerApplication::TunerApplication()
       tuningMediator(new TuningMediator())
 {
     window.setFramerateLimit(60);
-
-    // TODO: Handle window resizing
 }
 
 void TunerApplication::run()
@@ -16,7 +14,8 @@ void TunerApplication::run()
     {
         handleEvents();
 
-        ui->periodLength = tuningMediator->getFundamentalFrequency();
+        ui->displayFrequency(tuningMediator->getFundamentalFrequency());
+        ui->displayVolume(tuningMediator->getVolume());
 
         display();
     }

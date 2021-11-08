@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 class AudioUtil
@@ -43,6 +44,18 @@ public:
         return maxPeriodLength;
     }
 
+    static double autocorrelation(const Signal& signal, const std::uint64_t shift)
+    {
+        double result = 0.0;
+
+        for(auto i = shift; i < signal.length; ++i)
+        {
+            result += signal.samples[i] * signal.samples[i - shift];
+        }
+
+        return result / static_cast<double>(signal.length - shift);
+    }
+
     static double computeRmsVolume(const Signal& signal)
     {
         auto volume = double{0.0};
@@ -55,16 +68,9 @@ public:
         return std::sqrt(volume / static_cast<double>(signal.length));
     }
 
-    static double autocorrelation(const Signal& signal, const std::uint64_t shift)
+    static double rmsVolumeToDecibels(double rmsVolume)
     {
-        double result = 0.0;
-
-        for(auto i = shift; i < signal.length; ++i)
-        {
-            result += signal.samples[i] * signal.samples[i - shift];
-        }
-
-        return result / static_cast<double>(signal.length - shift);
+        return 10.0 * std::log10(rmsVolume / static_cast<double>(std::numeric_limits<std::int16_t>::max()));
     }
 
     static double periodToFrequency(const double periodLength, const std::uint64_t samplingRate)
