@@ -23,8 +23,9 @@ TuningMediator::~TuningMediator()
 
 double TuningMediator::getFundamentalFrequency() const
 {
+    // TODO: Conversion to frequency
     auto fundamentalPeriod = sampler->getCurrentlyDetectedPeriod();
-    return static_cast<double>(fundamentalPeriod);
+    return fundamentalPeriod;
 }
 
 void TuningMediator::setInput(const std::string& name)

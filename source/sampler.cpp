@@ -2,7 +2,7 @@
 
 #include "audioutil.h"
 
-Sampler::Sampler(sf::Time time) : currentlyDetectedPeriod(PERIOD_LENGTH_AT_START)
+Sampler::Sampler(sf::Time time)
 {
     setProcessingInterval(time);
 }
@@ -29,13 +29,15 @@ bool Sampler::onProcessSamples(const sf::Int16 *samples, std::size_t sampleCount
         {
             updateVolumeThreshold();
             startSkippingSamples(SAMPLES_TO_SKIP);
+            averageFilter.reset();
         }
         else if(!soundFadedOut())
         {
             auto fundamentalPeriodLength =
                 AudioUtil::detectFundamentalPeriodLength(AudioUtil::Signal{samples, sampleCount},
                                                          AudioUtil::PeriodLengthRange{scanningRangeMin, scanningRangeMax});
-            currentlyDetectedPeriod.store(fundamentalPeriodLength);
+            averageFilter.update(static_cast<double>(fundamentalPeriodLength));
+            currentPeriodLength.store(averageFilter.getMean());
         }
         else
         {
@@ -46,9 +48,14 @@ bool Sampler::onProcessSamples(const sf::Int16 *samples, std::size_t sampleCount
     return true;
 }
 
-uint64_t Sampler::getCurrentlyDetectedPeriod() const
+double Sampler::getCurrentlyDetectedPeriod() const
 {
-    return currentlyDetectedPeriod.load();
+    return currentPeriodLength.load();
+}
+
+double Sampler::getCurrentVolume() const
+{
+    return volume.load();
 }
 
 bool Sampler::areThereSamplesToSkip() const
@@ -97,7 +104,7 @@ void Sampler::filterSample(const sf::Int16 *samples, std::size_t sampleCount)
 void Sampler::trackVolume(const sf::Int16 *samples, std::size_t sampleCount)
 {
     previousVolume = volume;
-    volume = AudioUtil::computeRmsVolume(AudioUtil::Signal{samples, sampleCount});
+    volume.store(AudioUtil::computeRmsVolume(AudioUtil::Signal{samples, sampleCount}));
 }
 
 bool Sampler::soundDetected() const

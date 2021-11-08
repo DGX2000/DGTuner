@@ -8,6 +8,7 @@
 #include <SFML/Audio.hpp>
 
 #include "medianfilter.h"
+#include "runningaveragefilter.h"
 
 class Sampler : public sf::SoundRecorder
 {
@@ -15,25 +16,26 @@ public:
     Sampler(sf::Time samplingPeriod);
 
     bool onProcessSamples(const sf::Int16* samples, std::size_t sampleCount) override;
-    std::uint64_t getCurrentlyDetectedPeriod() const;
+    double getCurrentlyDetectedPeriod() const;
+    double getCurrentVolume() const;
 
 private:
-    bool areThereSamplesToSkip() const;
-    bool areThereSamplesToFilter() const;
-    void startSkippingSamples(std::uint64_t samplesToSkip);
-    void startFilteringSamples(std::uint64_t samplesToFilter);
-    void skipSample();
-    void filterSample(const sf::Int16 *samples, std::size_t sampleCount);
+    inline bool areThereSamplesToSkip() const;
+    inline bool areThereSamplesToFilter() const;
+    inline void startSkippingSamples(std::uint64_t samplesToSkip);
+    inline void startFilteringSamples(std::uint64_t samplesToFilter);
+    inline void skipSample();
+    inline void filterSample(const sf::Int16 *samples, std::size_t sampleCount);
 
-    void trackVolume(const sf::Int16 *samples, std::size_t sampleCount);
-    bool soundDetected() const;
-    bool soundFadedOut() const;
-    void updateVolumeThreshold();
-    void resetVolumeThreshold();
+    inline void trackVolume(const sf::Int16 *samples, std::size_t sampleCount);
+    inline bool soundDetected() const;
+    inline bool soundFadedOut() const;
+    inline void updateVolumeThreshold();
+    inline void resetVolumeThreshold();
 
 private:
-    static constexpr std::uint64_t SAMPLES_TO_FILTER = 5;
-    static constexpr std::uint64_t SAMPLES_TO_SKIP = 10;
+    static constexpr std::uint64_t SAMPLES_TO_FILTER = 7;
+    static constexpr std::uint64_t SAMPLES_TO_SKIP = 8;
 
     static constexpr double VOLUME_DETECTION_THRESHOLD = 2.0;
     static constexpr double VOLUME_FADEOUT_THRESHOLD = 0.25;
@@ -47,8 +49,9 @@ private:
 
 private:
     MedianFilter<std::uint64_t, SAMPLES_TO_FILTER> medianFilter;
+    RunningAverageFilter averageFilter;
 
-    std::atomic<std::uint64_t> currentlyDetectedPeriod;
+    std::atomic<double> currentPeriodLength{PERIOD_LENGTH_AT_START};
 
     std::uint64_t scanningRangeMin{0};
     std::uint64_t scanningRangeMax{0};
@@ -56,7 +59,7 @@ private:
     std::uint64_t samplesToSkip{0};
     std::uint64_t samplesToFilter{0};
 
-    double volume{0.0};
+    std::atomic<double> volume{0.0};
     double previousVolume{0.0};
     double volumeThreshold{std::numeric_limits<double>::infinity()};
 };

@@ -10,10 +10,17 @@ TunerUi::TunerUi(unsigned int width, unsigned int height)
 {
     font.loadFromFile("fonts/IBMPlexMono-Bold.ttf");
     text.setFont(font);
+
+    background = sf::RectangleShape(sf::Vector2f(width, height));
+    background.setFillColor(sf::Color(128, 128, 128));
 }
 
 void TunerUi::drawOnto(sf::RenderWindow& window)
 {
+    window.draw(background);
+
+    // TODO: This is just for debugging, replace this
+    // with the prepared graphical UI asap
     text.setPosition(20.0F, 100.0F);
     text.setString("Period Length");
     window.draw(text);

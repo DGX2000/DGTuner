@@ -67,7 +67,7 @@ public:
         return result / static_cast<double>(signal.length - shift);
     }
 
-    static double periodToFrequency(const std::uint64_t periodLength, const std::uint64_t samplingRate)
+    static double periodToFrequency(const double periodLength, const std::uint64_t samplingRate)
     {
         return static_cast<double>(samplingRate) / static_cast<double>(periodLength);
     }
